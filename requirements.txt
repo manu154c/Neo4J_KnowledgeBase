@@ -1,0 +1,2 @@
+django
+neo4j-python-driver
