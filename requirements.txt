@@ -1,2 +1,4 @@
-django
-neo4j-python-driver
+Django
+django-debug-toolbar
+nltk
+py2neo
