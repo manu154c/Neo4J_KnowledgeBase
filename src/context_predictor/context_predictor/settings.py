@@ -121,7 +121,7 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
-if DEBUG:
+"""if DEBUG:
     INTERNAL_IPS = ['127.0.0.1', 'localhost',]
     
     MIDDLEWARE += [
@@ -148,3 +148,4 @@ if DEBUG:
         'debug_toolbar.panels.redirects.RedirectsPanel',
         
         ]
+"""

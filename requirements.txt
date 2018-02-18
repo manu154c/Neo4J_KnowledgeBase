@@ -1,4 +1,2 @@
 Django
-django-debug-toolbar
 nltk
-py2neo
