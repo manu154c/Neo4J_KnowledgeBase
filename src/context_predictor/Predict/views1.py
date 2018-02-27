@@ -13,6 +13,9 @@ import string
 
 from py2neo import Graph, Node, Relationship, NodeSelector
 
+# neo4j python driver
+# from neo4j.v1 import GraphDatabase, basic_auth
+
 
 # for testing purpose
 import pdb
@@ -83,6 +86,17 @@ def insert_into_graph_db(dictionary_in):
     return 1
 
 
+"""
+def insert_into_graph_db(dictionary_in):
+    driver = GraphDatabase.driver("bolt://localhost", auth=basic_auth("neo4j", "root"))
+    session = driver.session()
+    insert_query = "CREATE (word:Word {value:{a}, count:{b}}) RETURN word;"
+    data = [["Jim","Mike"],["Jim","Billy"],["Anna","Jim"], ["Anna","Mike"],["Sally","Anna"],["Joe","Sally"], ["Joe","Bob"],["Bob","Sally"]]
+
+    session.run(insert_query, parameters={"pairs": data})
+    return 1
+"""
+
 # it will count the number of relation exist between 2 nodes
 # from input-token-list pick adjecent nodes
 # check both nodes are present 
@@ -96,8 +110,11 @@ def count_bigram_relatedness(cleaned_tocken, dictinary_from_tokens):
     print(cleaned_tocken)
     for i in range(list_position):
         node1 = cleaned_tocken[i]
+        print(node1)
         node2 = cleaned_tocken[i+1]
+        print(node2)
         check_for_relation(node1, node2)
+        #list_position = list_position + 1
 
     return 1
 
@@ -108,38 +125,53 @@ def count_bigram_relatedness(cleaned_tocken, dictinary_from_tokens):
 #        create a new CO_OCCURENCE relation between those nodes
 #        initialize the count to 1
 def check_for_relation(node1, node2):
-    g = Graph('http://localhost:7474/db/data', user='neo4j', password='root')
+    graph = Graph('http://localhost:7474/db/data', user='neo4j', password='root')
+    #neo4j_transaction = graph.begin()
 
-    d = g.run("MATCH (a:Word) WHERE a.value={b} RETURN a", b=node1)
-    list_d = list(d)
-    if len(list_d) > 0:
-        d = list_d[0]['a']
-    else:
-        neo4j_transaction = g.begin()
-        d = Node("Word",value=node1)
-        neo4j_transaction.create(d)
-        neo4j_transaction.commit()
+    #******************** TYPE ONE METHOD ***************************#
+    #neo4j_transaction.append(" MATCH (n:Word)-[:CO_OCCURENCED]->(m:Word) RETURN n", n=node1, m=node2)
 
-    e = g.run("MATCH (a:Word) WHERE a.value={b} RETURN a", b=node2)
-    list_e = list(e)
-    if len(list_e) > 0:
-        e = list_e[0]['a']
-    else:
-        neo4j_transaction = g.begin()
-        e = Node("Word",value=node2)
-        neo4j_transaction.create(e)
-        neo4j_transaction.commit()
+    #************************ TYPE TWO NEO$J ************************#
+    selector = NodeSelector(graph)
+    selected1 = selector.select("Word", value=node1)
+    selected2 = selector.select("Word", value=node2)
+
+    #********************* TYPE 3 NEO$j ****************************#
+    #selected1 = Node("Word",value=node1)
+    #selected2 = Node("Word",value=node2)
+    #selected1 = graph.run("MATCH (a:Word) WHERE a.value={b} RETURN a.value", b=node1)
+    #selected2 = graph.run("MATCH (a:Word) WHERE a.value={b} RETURN a.value", b=node2)
+    print(selected1)
+    print(selected2)
+    #print(dir(selected1.values))
+    #ab = Relationship(selected1, "CO_OCCURENCED", selected2, bidirectional=True)
+    #print(ab)
+    #neo4j_transaction.commit()
+    #result = neo4j_transaction.commit()
+    #result = graph.exists(ab)
+
+    #******************* TYPE 4 **********************************#
+    res = graph.match(start_node=selected1, end_node=selected2)
+    print(res)
+
+    #print(result)
+
+    if not res:
+        print("HAI")
+        neo4j_transaction = graph.begin()
+
+        #***************************** TYPE ONE INSERT **************#
+        #neo4j_transaction.append(" CREATE (n:Word{value:{a}})-[r:CO_OCCURENCED]->(m:Word{value:{b}}) RETURN r", n=node1, m=node2, a=node1, b=node2)
 
 
-    relations = g.match(start_node=d, rel_type="CO_OCCURENCED", end_node=e)
-
-    if len(list(relations)) == 0:
-        print("No Relationship exists")
-        neo4j_transaction = g.begin()
-        ab = Relationship(d, "CO_OCCURENCED", e, bidirectional=True)
+        #***************************** TYPE 3 INSERT *****************#
+        """selected1 = Node("Word",value=node1)
+        selected2 = Node("Word",value=node2)
+        ab = Relationship(selected1, "CO_OCCURENCED", selected2, bidirectional=True)
         neo4j_transaction.create(ab)
         neo4j_transaction.commit()
-    else:
-        print("Relationship already exist")
+        result = graph.exists(ab)
+        print(result)"""
+        #result = neo4j_transaction.commit()
 
     return 1
