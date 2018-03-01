@@ -21,14 +21,12 @@ from py2neo import watch
 # Main context Predictor Function
 def predict_context(request):
     input_data = "Cat climbed the tree. Dog Climbed the other tree."
-    #file = open("/home/manu154c/Downloads/phd-datasets/datasets/webkb-test-stemmed.txt","r")
-    #input_data = file.read()
+    file = open("/home/manu154c/Downloads/phd-datasets/datasets/webkb-test-stemmed1.txt","r")
+    input_data = file.read()
     cleaned_tocken = text_cleaning(input_data)
     #print(cleaned_tocken)
     dictinary_from_tokens = create_dictionary(cleaned_tocken)
-    #insert_into_graph_db(dictinary_from_tokens)
-    count_bigram_relatedness(cleaned_tocken, dictinary_from_tokens)
-    #output = "Cat climbed the tree. Dog Climbed the tree."
+    count_bigram_relatedness(cleaned_tocken)
     output = dictinary_from_tokens
     return render(request, 'Predict/post_list.html', {'output' : output})
 
@@ -46,6 +44,7 @@ def text_cleaning(input_doc):
     #print(stripped)
     return stripped
 
+# this function is not used at the moment. direct list is used for node creation
 # Creates a dictionary from the input document.
 def create_dictionary(input_token):
     # unique_values_list = list(set(input_token))
@@ -62,27 +61,6 @@ def create_dictionary(input_token):
     return output
 
 
-# training phase function
-# 1. insert_into_graph_db
-
-
-def insert_into_graph_db(dictionary_in):
-    graph = Graph('http://localhost:7474/db/data', user='neo4j', password='root')
-    neo4j_transaction = graph.begin()
-    #print(dictionary_in)
-    for key, value in dictionary_in.items():
-        #node = Node(key, name=key, count=value)
-        #print(key)
-        #print(value)
-        #assert(False)
-        neo4j_transaction.append("CREATE (word:Word {value:{a}, count:{b}}) RETURN word;", a=key, b=value)
-        #pdb.set_trace()
-        #watch("neo4j.http")
-        #neo4j_transaction.create(node)
-    neo4j_transaction.commit()
-    return 1
-
-
 # it will count the number of relation exist between 2 nodes
 # from input-token-list pick adjecent nodes
 # check both nodes are present 
@@ -90,7 +68,7 @@ def insert_into_graph_db(dictionary_in):
 #   do nothing
 # else
 #   call check_for_relation for check for a CO_OCCURENCE relation
-def count_bigram_relatedness(cleaned_tocken, dictinary_from_tokens):
+def count_bigram_relatedness(cleaned_tocken):
     list_position = len(cleaned_tocken)
     list_position = list_position-1
     print(cleaned_tocken)
@@ -132,14 +110,24 @@ def check_for_relation(node1, node2):
 
 
     relations = g.match(start_node=d, rel_type="CO_OCCURENCED", end_node=e)
-
-    if len(list(relations)) == 0:
+    existing_relation = list(relations)
+    
+    if len(existing_relation) == 0:
         print("No Relationship exists")
         neo4j_transaction = g.begin()
-        ab = Relationship(d, "CO_OCCURENCED", e, bidirectional=True)
+        ab = Relationship(d, "CO_OCCURENCED", e, count=1, bidirectional=True)
         neo4j_transaction.create(ab)
         neo4j_transaction.commit()
     else:
-        print("Relationship already exist")
+        relation_update = existing_relation[0]
+        #print(relation_update)
+        present_count = relation_update['count']
+        #print(present_count)
+        new_count = int(present_count) + 1
+        #print(new_count)
+        #neo4j_transaction = g.begin() # No need of transaction before updating the count
+        relation_update["count"] = new_count # return the updated value
+        relation_update.push()
+        #neo4j_transaction.commit()
 
     return 1
