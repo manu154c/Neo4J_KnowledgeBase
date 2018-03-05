@@ -2,7 +2,7 @@
 
 @auther : MANU C
 Created : 27/01/18
-Last Updated : 09/02/18
+Last Updated : 2/03/18
 
 """
 
@@ -10,6 +10,7 @@ Last Updated : 09/02/18
 from django.shortcuts import render
 from nltk.tokenize import word_tokenize
 import string
+from numpy import *
 
 from py2neo import Graph, Node, Relationship, NodeSelector
 
@@ -20,15 +21,27 @@ from py2neo import watch
 
 # Main context Predictor Function
 def predict_context(request):
-    input_data = "Cat climbed the tree. Dog Climbed the other tree."
-    file = open("/home/manu154c/Downloads/phd-datasets/datasets/webkb-test-stemmed1.txt","r")
-    input_data = file.read()
-    cleaned_tocken = text_cleaning(input_data)
-    #print(cleaned_tocken)
-    dictinary_from_tokens = create_dictionary(cleaned_tocken)
-    count_bigram_relatedness(cleaned_tocken)
-    output = dictinary_from_tokens
-    return render(request, 'Predict/post_list.html', {'output' : output})
+    if request.method == "POST":
+        #print(request)
+        word1 = request.POST['word1']
+        word2 = request.POST['word2']
+        up_know = request.POST['knowledge']
+        input_data = "Cat climbed the tree. Dog Climbed the other tree."
+        #file = open("/home/manu154c/Downloads/phd-datasets/datasets/webkb-test-stemmed1.txt","r")
+        #input_data = file.read()
+        cleaned_tocken = text_cleaning(input_data)
+        cleaned_tocken_len = len(cleaned_tocken)
+        #print(cleaned_tocken)
+        dictinary_from_tokens = create_dictionary(cleaned_tocken)
+        count_bigram_relatedness(cleaned_tocken)
+        update_word_count_from_dictionary(dictinary_from_tokens)
+        liklihood_ratio = calculate_likelihood_ratio(word1, word2, cleaned_tocken_len)
+        output = liklihood_ratio
+        #output = request
+        return render(request, 'Predict/post_list.html', {'output' : output})
+    else:
+        return render(request, 'Predict/get_request.html')
+
 
 # Word embedding require minimal document cleaning
 # No need of stemming, stop words removal etc...
@@ -61,6 +74,70 @@ def create_dictionary(input_token):
     return output
 
 
+def factorial(n): 
+
+    if n < 2: return 1
+    return reduce(lambda x, y: x*y, xrange(2, int(n)+1))
+
+def prob(k, n, x):
+
+    k = int(k)
+    n = int(n)
+    x = int(x)
+
+    #combinations = factorial(n)/(factorial(k)*factorial(n-k))
+    binomial = x**j * (1-x)**(n-k)
+
+    return binomial
+
+
+def calculate_likelihood_ratio(word1, word2, cleaned_tocken_len):
+    g = Graph('http://localhost:7474/db/data', user='neo4j', password='root')
+    node1 = g.run("MATCH (a:Word) WHERE a.value={b} RETURN a", b=word1)
+    list_node1 = list(node1)
+    start_node = list_node1[0]['a']
+    node2 = g.run("MATCH (a:Word) WHERE a.value={b} RETURN a", b=word2)
+    list_node2 = list(node2)
+    end_node = list_node2[0]['a']
+    relation = g.match(start_node=start_node, rel_type="CO_OCCURENCED", end_node=end_node)
+    existing_relation = list(relation)
+    print(existing_relation)
+    relation_count = existing_relation[0]['count']
+
+    c1 = start_node['word_count']
+    c2 = end_node['word_count']
+    c12 = relation_count
+    N = int(cleaned_tocken_len)
+
+    p = int(c2)/int(N)
+    p1 = int(c12)/int(c1)
+    p2 = (int(c2)-int(c12))/(int(N)-int(c1))
+
+    lh2 = log10(prob(c12, c1, p1)) - log10(prob(int(c2)-int(c12), int(N)-int(c1),p2))
+    lh1 = log10(prob(c12, c1, p)) + log10(prob(int(c2)-int(c12), int(N)-int(c1),p)) - lh2
+    
+
+    return 2*lh1
+
+
+# this function will update the count of each node (the words)
+# input is a dictionary {'word' : 'word_count'}
+def update_word_count_from_dictionary(dictinary_from_tokens):
+    g = Graph('http://localhost:7474/db/data', user='neo4j', password='root')
+    for key, value in dictinary_from_tokens.items():
+        word = g.run("MATCH (a:Word) WHERE a.value={b} RETURN a", b=key)
+        list_word = list(word)
+        if len(list_word) > 0:
+            node = list_word[0]['a'] # (f0a4f80:Word {value:"cat",word_count:1})
+            present_count = node['word_count']
+            new_count = present_count + value
+            node["word_count"] = new_count # return the updated value
+            node.push()
+
+    
+    return 1
+
+
 # it will count the number of relation exist between 2 nodes
 # from input-token-list pick adjecent nodes
 # check both nodes are present 
@@ -91,20 +168,20 @@ def check_for_relation(node1, node2):
     d = g.run("MATCH (a:Word) WHERE a.value={b} RETURN a", b=node1)
     list_d = list(d)
     if len(list_d) > 0:
-        d = list_d[0]['a']
+        d = list_d[0]['a'] # (f0a4f80:Word {value:"cat",word_count:1})
     else:
         neo4j_transaction = g.begin()
-        d = Node("Word",value=node1)
+        d = Node("Word",value=node1, word_count=1)
         neo4j_transaction.create(d)
         neo4j_transaction.commit()
 
     e = g.run("MATCH (a:Word) WHERE a.value={b} RETURN a", b=node2)
     list_e = list(e)
     if len(list_e) > 0:
-        e = list_e[0]['a']
+        e = list_e[0]['a'] # (f0a4f80:Word {value:"cat",word_count:1})
     else:
         neo4j_transaction = g.begin()
-        e = Node("Word",value=node2)
+        e = Node("Word",value=node2, word_count=1)
         neo4j_transaction.create(e)
         neo4j_transaction.commit()
 

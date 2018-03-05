@@ -1,0 +1,118 @@
+<head>
+
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+<link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
+
+{% load staticfiles %}
+
+{% csrf_token %}
+
+<!--link rel="stylesheet" href="{% static 'css/Predict.css' %}"-->
+
+<head>
+
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
+	<script type="text/javascript">
+		
+		function btn_click_fn() {
+
+			var check = 0;
+
+			alert("Hai");
+    		
+    		if($('.check').is(":checked"))
+    		{
+    			check = 1;
+    		}
+
+    		$.post("http://127.0.0.1:8000/",
+    		{
+        		word1: $(".word1").val(),
+        		word2: $(".word2").val(),
+        		knowledge : check,
+        		csrfmiddlewaretoken : $("input[name=csrfmiddlewaretoken]").val()
+
+    		},
+    
+    		function(data, status){
+        		$("#result").html(data);
+    		});
+
+		}
+
+	</script>
+
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+
+</head>
+
+	<body content="text/html" >
+
+		<div class='row' style='margin-top:20px;'>
+
+			<div class='col-md-2' >
+			</div>
+
+			<div class='col-md-8' >
+
+				Word 1 : <input type="text" class="word1" name="word1" placeholder="First Word">
+				Word 2 : <input type="text" class="word2" name="word2" placeholder="Second Word">
+
+			</div>
+
+			<div class='col-md-2' >
+			</div>
+
+		</div>
+
+		<div class='row' style='margin-top:20px;'>
+
+			<div class='col-md-4' >
+			</div>
+
+			<div class='col-md-4' >
+
+				<input type="checkbox" class="check" name="check"> Update Knowledgebase
+
+			</div>
+
+			<div class='col-md-4' >
+			</div>
+
+		</div>
+
+		<div class='row' style='margin-top:20px;'>
+
+			<div class='col-md-4' >
+			</div>
+
+			<div class='col-md-4' >
+
+				<!-- input type="button" class="btn btn-sm btn-default" value="Likelihood Ratio" -->
+				<button class="btn btn-sm btn-info" onclick="btn_click_fn()" >Likelihood Ratio</button>
+
+			</div>
+
+			<div class='col-md-4' >
+			</div>
+
+		</div>
+
+		<div class='row' style='margin-top:20px;'>
+
+			<div class='col-md-4' >
+			</div>
+
+			<div class='col-md-4' id="result" >
+
+				
+
+			</div>
+
+			<div class='col-md-4' >
+			</div>
+
+		</div>
+
+	</body>
