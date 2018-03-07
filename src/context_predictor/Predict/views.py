@@ -81,12 +81,12 @@ def factorial(n):
 
 def prob(k, n, x):
 
-    k = int(k)
-    n = int(n)
-    x = int(x)
+    k = float(k)
+    n = float(n)
+    x = float(x)
 
     #combinations = factorial(n)/(factorial(k)*factorial(n-k))
-    binomial = x**j * (1-x)**(n-k)
+    binomial = x**k * (1-x)**(n-k)
 
     return binomial
 
@@ -107,14 +107,45 @@ def calculate_likelihood_ratio(word1, word2, cleaned_tocken_len):
     c1 = start_node['word_count']
     c2 = end_node['word_count']
     c12 = relation_count
-    N = int(cleaned_tocken_len)
+    N = float(cleaned_tocken_len)
 
-    p = int(c2)/int(N)
-    p1 = int(c12)/int(c1)
-    p2 = (int(c2)-int(c12))/(int(N)-int(c1))
+    p = float(c2)/float(N)
+    p1 = float(c12)/float(c1)
+    p2 = (float(c2)-float(c12))/(float(N)-float(c1))
 
-    lh2 = log10(prob(c12, c1, p1)) - log10(prob(int(c2)-int(c12), int(N)-int(c1),p2))
-    lh1 = log10(prob(c12, c1, p)) + log10(prob(int(c2)-int(c12), int(N)-int(c1),p)) - lh2
+    a11 = prob(c12, c1, p1)
+    if a11 < 0:
+        a11 = -a11
+    a12 = log10(a11)
+
+    prob_a = float(c2)-float(c12)
+    prob_b = float(N)-float(c1)
+    prob_c = p2
+
+    b11 = prob(prob_a, prob_b, prob_c)
+    if b11 < 0:
+        b11 = -b11
+    b12 = log10(b11)
+
+    lh2 = float(a12) - float(b12)
+
+    d11 = prob(c12, c1, p)
+    if d11 < 0:
+        d11 = -d11
+    d12 = log10(d11)
+
+    prob_a = float(c2)-float(c12)
+    prob_b = float(N)-float(c1)
+    prob_c = p
+
+    e11 = prob(prob_a, prob_b, prob_c)
+    if e11 < 0:
+        e11 = -e11
+    e12 = log10(e11)
+
+    lh1 = d12 + e12 - float(lh2)
+
+    #pdb.set_trace()
     
 
     return 2*lh1
