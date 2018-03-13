@@ -82,11 +82,17 @@ def factorial(n):
 def prob(k, n, x):
 
     k = float(k)
+    print(k)
     n = float(n)
+    print(n)
     x = float(x)
+    print(x)
+
+    pdb.set_trace()
 
     #combinations = factorial(n)/(factorial(k)*factorial(n-k))
-    binomial = x**k * (1-x)**(n-k)
+    binomial = round(x**k,10) * round((1-x)**(n-k), 10)
+    print(binomial)
 
     return binomial
 
@@ -101,22 +107,32 @@ def calculate_likelihood_ratio(word1, word2, cleaned_tocken_len):
     end_node = list_node2[0]['a']
     relation = g.match(start_node=start_node, rel_type="CO_OCCURENCED", end_node=end_node)
     existing_relation = list(relation)
-    print(existing_relation)
+    #print(existing_relation)
     relation_count = existing_relation[0]['count']
 
     c1 = start_node['word_count']
     c2 = end_node['word_count']
     c12 = relation_count
     N = float(cleaned_tocken_len)
+    c1 = 12593
+    c2 = 932
+    c12 = 150
+    N = 14307668
 
     p = float(c2)/float(N)
+    #print(p)
     p1 = float(c12)/float(c1)
+    #print(p1)
     p2 = (float(c2)-float(c12))/(float(N)-float(c1))
+    #print(p2)
 
     a11 = prob(c12, c1, p1)
+    pdb.set_trace()
+    print(a11)
     if a11 < 0:
         a11 = -a11
     a12 = log10(a11)
+    print(a12)
 
     prob_a = float(c2)-float(c12)
     prob_b = float(N)-float(c1)
@@ -144,8 +160,6 @@ def calculate_likelihood_ratio(word1, word2, cleaned_tocken_len):
     e12 = log10(e11)
 
     lh1 = d12 + e12 - float(lh2)
-
-    #pdb.set_trace()
     
 
     return 2*lh1
@@ -179,7 +193,7 @@ def update_word_count_from_dictionary(dictinary_from_tokens):
 def count_bigram_relatedness(cleaned_tocken):
     list_position = len(cleaned_tocken)
     list_position = list_position-1
-    print(cleaned_tocken)
+    #print(cleaned_tocken)
     for i in range(list_position):
         node1 = cleaned_tocken[i]
         node2 = cleaned_tocken[i+1]
@@ -239,3 +253,28 @@ def check_for_relation(node1, node2):
         #neo4j_transaction.commit()
 
     return 1
+
+def list_all_nodes(request):
+
+    g = Graph('http://localhost:7474/db/data', user='neo4j', password='root')
+
+    d = g.run("MATCH (n) RETURN n LIMIT 25")
+    list_d = list(d)
+    #print(list_d)
+
+    #pdb.set_trace()
+
+    table = ""
+
+    i = 0
+    for node in list_d:
+        i = i + 1
+        table = table + " <tr class='' > "
+        table = table + " <td> " + str(i) + " </td> "
+        table = table + " <td> " + node['n']['value'] + " </td> "
+        table = table + " <td> " + str(node['n']['word_count']) + " </td> "
+        table = table + " </tr>"
+
+    output = table
+
+    return render(request, 'Predict/ajax_list_nodes.html', {'output' : output})

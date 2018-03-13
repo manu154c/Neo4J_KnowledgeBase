@@ -41,6 +41,22 @@
 
 		}
 
+
+		function list_all_nodes() {
+
+    		$.post("http://127.0.0.1:8000/list/",
+    		{
+       
+        		csrfmiddlewaretoken : $("input[name=csrfmiddlewaretoken]").val()
+
+    		},
+    
+    		function(data, status){
+        		$("#node_list").html(data);
+    		});
+
+		}
+
 	</script>
 
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
@@ -91,6 +107,7 @@
 
 				<!-- input type="button" class="btn btn-sm btn-default" value="Likelihood Ratio" -->
 				<button class="btn btn-sm btn-info" onclick="btn_click_fn()" >Likelihood Ratio</button>
+				<button class="btn btn-sm btn-info" onclick="list_all_nodes()" >List Node</button>
 
 			</div>
 
@@ -111,6 +128,17 @@
 			</div>
 
 			<div class='col-md-4' >
+			</div>
+
+		</div>
+
+
+		<div class='row' style='margin-top:20px;'>
+
+			<div class='col-md-6' id='node_list' >
+			</div>
+
+			<div class='col-md-6' id='' >
 			</div>
 
 		</div>
