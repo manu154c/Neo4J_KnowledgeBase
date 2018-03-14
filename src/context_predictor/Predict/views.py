@@ -26,6 +26,7 @@ def predict_context(request):
         word1 = request.POST['word1']
         word2 = request.POST['word2']
         up_know = request.POST['knowledge']
+        print(up_know)
         input_data = "Cat climbed the tree. Dog Climbed the other tree."
         #file = open("/home/manu154c/Downloads/phd-datasets/datasets/webkb-test-stemmed1.txt","r")
         #input_data = file.read()
@@ -33,8 +34,9 @@ def predict_context(request):
         cleaned_tocken_len = len(cleaned_tocken)
         #print(cleaned_tocken)
         dictinary_from_tokens = create_dictionary(cleaned_tocken)
-        count_bigram_relatedness(cleaned_tocken)
-        update_word_count_from_dictionary(dictinary_from_tokens)
+        if up_know == "1":
+            count_bigram_relatedness(cleaned_tocken)
+            update_word_count_from_dictionary(dictinary_from_tokens)
         liklihood_ratio = calculate_likelihood_ratio(word1, word2, cleaned_tocken_len)
         output = liklihood_ratio
         #output = request
@@ -82,17 +84,17 @@ def factorial(n):
 def prob(k, n, x):
 
     k = float(k)
-    print(k)
+    #print(k)
     n = float(n)
-    print(n)
+    #print(n)
     x = float(x)
-    print(x)
+    #print(x)
 
-    pdb.set_trace()
+    #pdb.set_trace()
 
     #combinations = factorial(n)/(factorial(k)*factorial(n-k))
-    binomial = round(x**k,10) * round((1-x)**(n-k), 10)
-    print(binomial)
+    binomial = x**k * (1-x)**(n-k)
+    #print(binomial)
 
     return binomial
 
@@ -113,11 +115,12 @@ def calculate_likelihood_ratio(word1, word2, cleaned_tocken_len):
     c1 = start_node['word_count']
     c2 = end_node['word_count']
     c12 = relation_count
-    N = float(cleaned_tocken_len)
-    c1 = 12593
-    c2 = 932
-    c12 = 150
-    N = 14307668
+    #N = float(cleaned_tocken_len)
+    N = total_word_count()
+    #c1 = 12593
+    #c2 = 932
+    #c12 = 150
+    #N = 14307668
 
     p = float(c2)/float(N)
     #print(p)
@@ -127,12 +130,12 @@ def calculate_likelihood_ratio(word1, word2, cleaned_tocken_len):
     #print(p2)
 
     a11 = prob(c12, c1, p1)
-    pdb.set_trace()
-    print(a11)
+    #pdb.set_trace()
+    #print(a11)
     if a11 < 0:
         a11 = -a11
     a12 = log10(a11)
-    print(a12)
+    #print(a12)
 
     prob_a = float(c2)-float(c12)
     prob_b = float(N)-float(c1)
@@ -162,7 +165,7 @@ def calculate_likelihood_ratio(word1, word2, cleaned_tocken_len):
     lh1 = d12 + e12 - float(lh2)
     
 
-    return 2*lh1
+    return -2*lh1
 
 
 # this function will update the count of each node (the words)
@@ -260,7 +263,7 @@ def list_all_nodes(request):
 
     d = g.run("MATCH (n) RETURN n LIMIT 25")
     list_d = list(d)
-    #print(list_d)
+    print(list_d)
 
     #pdb.set_trace()
 
@@ -278,3 +281,19 @@ def list_all_nodes(request):
     output = table
 
     return render(request, 'Predict/ajax_list_nodes.html', {'output' : output})
+
+def total_word_count():
+
+    g = Graph('http://localhost:7474/db/data', user='neo4j', password='root')
+
+    d = g.run("MATCH (n) RETURN n LIMIT 25")
+    list_d = list(d)
+    #print(list_d)
+
+    #pdb.set_trace()
+
+    i = 0
+    for node in list_d:
+        i = i + int(node['n']['word_count'])
+
+    return i
